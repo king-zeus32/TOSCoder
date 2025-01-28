@@ -1,0 +1,38 @@
+# Inputs
+input showGapLines = yes;  # Toggle to show horizontal lines at the gap levels
+input gapColor = Color.YELLOW;  # Color for highlighting gaps
+input extendGapLines = yes;  # Extend gap lines across the chart
+
+# Detect Gaps
+def gapUp = open > close[1];  # Gap up condition
+def gapDown = open < close[1];  # Gap down condition
+def gapStart = if gapUp then close[1] else if gapDown then close[1] else Double.NaN;
+def gapEnd = if gapUp then open else if gapDown then open else Double.NaN;
+
+# Plot Gap Zones
+plot GapStartLine = if showGapLines and !IsNaN(gapStart) then gapStart else Double.NaN;
+GapStartLine.SetPaintingStrategy(PaintingStrategy.HORIZONTAL);
+GapStartLine.SetDefaultColor(gapColor);
+GapStartLine.SetLineWeight(2);
+GapStartLine.SetStyle(Curve.SHORT_DASH);
+
+plot GapEndLine = if showGapLines and !IsNaN(gapEnd) then gapEnd else Double.NaN;
+GapEndLine.SetPaintingStrategy(PaintingStrategy.HORIZONTAL);
+GapEndLine.SetDefaultColor(gapColor);
+GapEndLine.SetLineWeight(2);
+GapEndLine.SetStyle(Curve.SHORT_DASH);
+
+# Extend Lines Across the Chart
+def gapStartExtended = if extendGapLines and !IsNaN(gapStart) then gapStart else Double.NaN;
+def gapEndExtended = if extendGapLines and !IsNaN(gapEnd) then gapEnd else Double.NaN;
+
+AddCloud(if !IsNaN(gapStartExtended) and !IsNaN(gapEndExtended) then gapStartExtended else Double.NaN,
+         if !IsNaN(gapStartExtended) and !IsNaN(gapEndExtended) then gapEndExtended else Double.NaN,
+         gapColor, gapColor);
+
+# Alerts for Gap Fill
+def gapFillUp = low <= gapStart and gapUp;  # Gap up filled
+def gapFillDown = high >= gapEnd and gapDown;  # Gap down filled
+
+Alert(gapFillUp, "Gap Up Filled", Alert.BAR, Sound.BELL);
+Alert(gapFillDown, "Gap Down Filled", Alert.BAR, Sound.CHIME);
