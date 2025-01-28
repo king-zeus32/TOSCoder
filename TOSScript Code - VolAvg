@@ -1,0 +1,43 @@
+# Inputs
+input length = 50;  # Period for volume average
+input spike_threshold = 1.5;  # Threshold for unusual volume (1.5 = 150% of average volume)
+input buy_threshold = 1.2;  # Buy signal threshold (e.g., 120% of average volume)
+input sell_threshold = 0.8;  # Sell signal threshold (e.g., 80% of average volume)
+
+# Calculations
+def avgVolume = Average(volume, length);  # Average volume over the specified period
+def isSpike = volume > avgVolume * spike_threshold;  # Unusual volume activity condition
+def buySignal = volume > avgVolume * buy_threshold;  # Buy condition
+def sellSignal = volume < avgVolume * sell_threshold;  # Sell condition
+
+# Plot Volume Bars with Color Coding
+plot VolumeBar = volume;
+VolumeBar.SetPaintingStrategy(PaintingStrategy.HISTOGRAM);
+VolumeBar.AssignValueColor(
+    if isSpike then Color.ORANGE  # Volume Spike
+    else if buySignal then Color.GREEN  # Buy Signal
+    else if sellSignal then Color.RED  # Sell Signal
+    else Color.GRAY  # Normal Volume
+);
+VolumeBar.SetLineWeight(2);
+
+# Plot Average Volume Trendline
+plot AvgVolumeLine = avgVolume;
+AvgVolumeLine.SetDefaultColor(Color.BLUE);
+AvgVolumeLine.SetLineWeight(2);
+AvgVolumeLine.SetStyle(Curve.SHORT_DASH);
+
+# Alerts for Volume Spikes
+Alert(isSpike, "Unusual Volume Activity Detected! Spike Above Threshold.", Alert.BAR, Sound.BELL);
+
+# Buy/Sell Alerts
+Alert(buySignal, "Buy Signal: Volume above threshold.", Alert.BAR, Sound.DING);
+Alert(sellSignal, "Sell Signal: Volume below threshold.", Alert.BAR, Sound.CHIME);
+
+# Labels for Current Volume, Avg Volume, and Spike Threshold
+AddLabel(yes, "Current Volume: " + Round(volume, 0), 
+         if isSpike then Color.ORANGE else if buySignal then Color.GREEN else if sellSignal then Color.RED else Color.GRAY);
+AddLabel(yes, "Avg Volume: " + Round(avgVolume, 0), Color.BLUE);
+AddLabel(yes, "Spike Threshold: " + Round(avgVolume * spike_threshold, 0), Color.ORANGE);
+AddLabel(yes, "Buy Threshold: " + Round(avgVolume * buy_threshold, 0), Color.GREEN);
+AddLabel(yes, "Sell Threshold: " + Round(avgVolume * sell_threshold, 0), Color.RED);
