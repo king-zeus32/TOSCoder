@@ -1,0 +1,84 @@
+# Inputs
+input atrLength = 14;  # ATR period for volatility-based levels
+input pivotTimeFrame = {default DAY, WEEK, MONTH};  # Timeframe for pivot points
+input atrMultiplier = 1.0;  # Multiplier for ATR-based expected range
+input showATRLevels = yes;  # Show ATR-based levels
+
+# ATR Calculation
+def atr = Average(TrueRange(high, close, low), atrLength);
+
+# Pivot Point Calculation
+def highPivot;
+def lowPivot;
+def closePivot;
+
+switch (pivotTimeFrame) {
+    case DAY:
+        highPivot = high(period = AggregationPeriod.DAY);
+        lowPivot = low(period = AggregationPeriod.DAY);
+        closePivot = close(period = AggregationPeriod.DAY);
+    case WEEK:
+        highPivot = high(period = AggregationPeriod.WEEK);
+        lowPivot = low(period = AggregationPeriod.WEEK);
+        closePivot = close(period = AggregationPeriod.WEEK);
+    case MONTH:
+        highPivot = high(period = AggregationPeriod.MONTH);
+        lowPivot = low(period = AggregationPeriod.MONTH);
+        closePivot = close(period = AggregationPeriod.MONTH);
+}
+
+def pivotPoint = (highPivot + lowPivot + closePivot) / 3;  # Pivot point formula
+def r1 = 2 * pivotPoint - lowPivot;  # Resistance Level 1
+def s1 = 2 * pivotPoint - highPivot;  # Support Level 1
+def r2 = pivotPoint + (highPivot - lowPivot);  # Resistance Level 2
+def s2 = pivotPoint - (highPivot - lowPivot);  # Support Level 2
+
+# ATR-Based Expected Levels
+def atrHigh = close + (atr * atrMultiplier);
+def atrLow = close - (atr * atrMultiplier);
+
+# Plot Pivot Levels
+plot PivotPoint = pivotPoint;
+PivotPoint.SetDefaultColor(Color.BLUE);
+PivotPoint.SetLineWeight(2);
+
+plot Resistance1 = r1;
+Resistance1.SetDefaultColor(Color.GREEN);
+Resistance1.SetLineWeight(2);
+
+plot Support1 = s1;
+Support1.SetDefaultColor(Color.RED);
+Support1.SetLineWeight(2);
+
+plot Resistance2 = r2;
+Resistance2.SetDefaultColor(Color.DARK_GREEN);
+Resistance2.SetLineWeight(2);
+
+plot Support2 = s2;
+Support2.SetDefaultColor(Color.DARK_RED);
+Support2.SetLineWeight(2);
+
+# Plot ATR-Based Levels
+plot ATRHigh = if showATRLevels then atrHigh else Double.NaN;
+ATRHigh.SetDefaultColor(Color.CYAN);
+ATRHigh.SetLineWeight(1);
+
+plot ATRLow = if showATRLevels then atrLow else Double.NaN;
+ATRLow.SetDefaultColor(Color.CYAN);
+ATRLow.SetLineWeight(1);
+
+# Labels for Levels
+AddLabel(yes, "Pivot: " + Round(pivotPoint, 2), Color.BLUE);
+AddLabel(yes, "R1: " + Round(r1, 2) + " | S1: " + Round(s1, 2), Color.GRAY);
+AddLabel(yes, "R2: " + Round(r2, 2) + " | S2: " + Round(s2, 2), Color.GRAY);
+AddLabel(showATRLevels, "ATR High: " + Round(atrHigh, 2) + " | ATR Low: " + Round(atrLow, 2), Color.CYAN);
+
+# Alerts for Price Reaching Key Levels
+Alert(high >= Resistance1, "Price reached Resistance 1 (R1)", Alert.BAR, Sound.Bell);
+Alert(low <= Support1, "Price reached Support 1 (S1)", Alert.BAR, Sound.Bell);
+Alert(high >= Resistance2, "Price reached Resistance 2 (R2)", Alert.BAR, Sound.Chime);
+Alert(low <= Support2, "Price reached Support 2 (S2)", Alert.BAR, Sound.Chime);
+
+# Alerts for ATR-Based Levels
+Alert(close >= atrHigh, "Price reached ATR High", Alert.BAR, Sound.Ding);
+Alert(close <= atrLow, "Price reached ATR Low", Alert.BAR, Sound.Chime);
