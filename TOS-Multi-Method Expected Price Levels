@@ -1,0 +1,110 @@
+# Inputs
+input atrLength = 14;  # ATR period for volatility-based levels
+input fibRetracements = {default "38.2%", "50%", "61.8%"};  # Fibonacci levels
+input pivotTimeFrame = {default DAY, WEEK, MONTH};  # Timeframe for Pivot Points
+input atrMultiplier = 1.0;  # Multiplier for ATR-based levels
+
+# ATR Calculation
+def atr = Average(TrueRange(high, close, low), atrLength);
+
+# Pivot Point Calculation
+def highPivot;
+def lowPivot;
+def closePivot;
+
+switch (pivotTimeFrame) {
+    case DAY:
+        highPivot = high(period = AggregationPeriod.DAY);
+        lowPivot = low(period = AggregationPeriod.DAY);
+        closePivot = close(period = AggregationPeriod.DAY);
+    case WEEK:
+        highPivot = high(period = AggregationPeriod.WEEK);
+        lowPivot = low(period = AggregationPeriod.WEEK);
+        closePivot = close(period = AggregationPeriod.WEEK);
+    case MONTH:
+        highPivot = high(period = AggregationPeriod.MONTH);
+        lowPivot = low(period = AggregationPeriod.MONTH);
+        closePivot = close(period = AggregationPeriod.MONTH);
+}
+
+def pivotPoint = (highPivot + lowPivot + closePivot) / 3;  # Pivot Point Formula
+def r1 = 2 * pivotPoint - lowPivot;  # Resistance 1
+def s1 = 2 * pivotPoint - highPivot;  # Support 1
+def r2 = pivotPoint + (highPivot - lowPivot);  # Resistance 2
+def s2 = pivotPoint - (highPivot - lowPivot);  # Support 2
+
+# Fibonacci Retracements
+def fib38 = lowPivot + (highPivot - lowPivot) * 0.382;  # 38.2% Retracement
+def fib50 = lowPivot + (highPivot - lowPivot) * 0.5;    # 50% Retracement
+def fib618 = lowPivot + (highPivot - lowPivot) * 0.618; # 61.8% Retracement
+
+# ATR-Based Levels
+def atrHigh = close + (atr * atrMultiplier);
+def atrLow = close - (atr * atrMultiplier);
+
+# Plot Pivot Levels
+plot PivotPoint = pivotPoint;
+PivotPoint.SetDefaultColor(Color.BLUE);
+PivotPoint.SetLineWeight(2);
+
+plot Resistance1 = r1;
+Resistance1.SetDefaultColor(Color.GREEN);
+Resistance1.SetLineWeight(2);
+
+plot Support1 = s1;
+Support1.SetDefaultColor(Color.RED);
+Support1.SetLineWeight(2);
+
+plot Resistance2 = r2;
+Resistance2.SetDefaultColor(Color.DARK_GREEN);
+Resistance2.SetLineWeight(2);
+
+plot Support2 = s2;
+Support2.SetDefaultColor(Color.DARK_RED);
+Support2.SetLineWeight(2);
+
+# Plot Fibonacci Retracements
+plot Fib38 = fib38;
+Fib38.SetDefaultColor(Color.ORANGE);
+Fib38.SetLineWeight(1);
+Fib38.SetStyle(Curve.SHORT_DASH);
+
+plot Fib50 = fib50;
+Fib50.SetDefaultColor(Color.YELLOW);
+Fib50.SetLineWeight(1);
+Fib50.SetStyle(Curve.SHORT_DASH);
+
+plot Fib618 = fib618;
+Fib618.SetDefaultColor(Color.PINK);
+Fib618.SetLineWeight(1);
+Fib618.SetStyle(Curve.SHORT_DASH);
+
+# Plot ATR-Based Levels
+plot ATRHigh = atrHigh;
+ATRHigh.SetDefaultColor(Color.CYAN);
+ATRHigh.SetLineWeight(1);
+
+plot ATRLow = atrLow;
+ATRLow.SetDefaultColor(Color.CYAN);
+ATRLow.SetLineWeight(1);
+
+# Labels for Levels
+AddLabel(yes, "Pivot: " + Round(pivotPoint, 2), Color.BLUE);
+AddLabel(yes, "R1: " + Round(r1, 2) + " | S1: " + Round(s1, 2), Color.GRAY);
+AddLabel(yes, "R2: " + Round(r2, 2) + " | S2: " + Round(s2, 2), Color.GRAY);
+AddLabel(yes, "Fib 38.2%: " + Round(fib38, 2) + " | Fib 50%: " + Round(fib50, 2), Color.GRAY);
+AddLabel(yes, "Fib 61.8%: " + Round(fib618, 2), Color.GRAY);
+AddLabel(yes, "ATR High: " + Round(atrHigh, 2) + " | ATR Low: " + Round(atrLow, 2), Color.CYAN);
+
+# Alerts for Key Levels
+Alert(high >= Resistance1, "Price reached Resistance 1 (R1)", Alert.BAR, Sound.Bell);
+Alert(low <= Support1, "Price reached Support 1 (S1)", Alert.BAR, Sound.Bell);
+Alert(high >= Resistance2, "Price reached Resistance 2 (R2)", Alert.BAR, Sound.Chime);
+Alert(low <= Support2, "Price reached Support 2 (S2)", Alert.BAR, Sound.Chime);
+
+Alert(close >= fib38, "Price reached Fibonacci 38.2%", Alert.BAR, Sound.Ding);
+Alert(close >= fib50, "Price reached Fibonacci 50%", Alert.BAR, Sound.Ding);
+Alert(close >= fib618, "Price reached Fibonacci 61.8%", Alert.BAR, Sound.Ding);
+
+Alert(close >= atrHigh, "Price reached ATR High", Alert.BAR, Sound.Ding);
+Alert(close <= atrLow, "Price reached ATR Low", Alert.BAR, Sound.Chime);
